@@ -1,0 +1,609 @@
+/* Mobile fixes are loaded last to keep every page inside the viewport. */
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+
+  main,
+  main > *,
+  section,
+  article,
+  form,
+  fieldset,
+  header > *,
+  footer > * {
+    min-width: 0;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  a,
+  b,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  .header,
+  .header.solid {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .menu {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .nav {
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: calc(100dvh - 70px);
+    padding: 24px max(20px, env(safe-area-inset-right))
+      calc(24px + env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
+    overflow-y: auto;
+  }
+
+  .nav a {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .nav a::after {
+    bottom: 2px;
+  }
+
+  footer {
+    padding-right: max(5vw, env(safe-area-inset-right));
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    padding-left: max(5vw, env(safe-area-inset-left));
+  }
+
+  .garage-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .garage-actions a,
+  .garage-actions button {
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .garage-actions button {
+    border-color: #e6c2bd;
+  }
+
+  .confirm {
+    padding: 24px;
+  }
+
+  .confirm > div {
+    flex-wrap: wrap;
+  }
+
+  .photo-picker-previews {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .photo-picker-previews figure {
+    min-width: 0;
+  }
+
+  .photo-picker-actions button {
+    min-height: 40px;
+    flex: 1 1 90px;
+  }
+
+  .messages-page {
+    min-height: 100dvh;
+  }
+
+  .conversation-list,
+  .chat-panel {
+    height: calc(100dvh - 70px);
+  }
+
+  .conversation-items > a {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+
+  .conversation-items > a > div:nth-child(2),
+  .chat-head > div:nth-of-type(2) {
+    min-width: 0;
+  }
+
+  .conversation-items b,
+  .chat-head b,
+  .chat-head span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .community-chat-page {
+    min-height: 100dvh;
+  }
+
+  .community-chat-shell {
+    min-height: calc(100dvh - 130px);
+  }
+}
+
+@media (max-width: 620px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  .inner-page,
+  .profile-page,
+  .settings-page,
+  .feed-page,
+  .post-detail {
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .inner-page > h1,
+  .garage-title h1,
+  .feed-head h1,
+  .auth-box h1,
+  .form-aside h1,
+  .profile-head h1,
+  .settings-layout h1,
+  .service-hero h1 {
+    font-size: clamp(2.45rem, 13vw, 3.35rem);
+    line-height: 0.98;
+  }
+
+  .home-social-copy h1 {
+    font-size: clamp(2.75rem, 14vw, 4rem);
+    line-height: 0.94;
+  }
+
+  .social-section-head h2,
+  .section h2,
+  .service-section-head h2,
+  .expense-chart h2,
+  .comments > h2 {
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+
+  .home-social-board {
+    min-height: 250px;
+    padding: 28px 22px;
+  }
+
+  .garage-title {
+    margin-bottom: 40px;
+  }
+
+  .garage-car-body {
+    padding: 20px 16px;
+  }
+
+  .garage-car-body h2 {
+    font-size: clamp(1.45rem, 8vw, 1.8rem);
+  }
+
+  .garage-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .garage-actions a,
+  .garage-actions button {
+    width: 100%;
+  }
+
+  .confirm {
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .confirm > div,
+  .confirm button {
+    width: 100%;
+  }
+
+  .form-aside {
+    min-height: 380px;
+  }
+
+  .form-aside > img,
+  .image-placeholder {
+    max-height: 220px;
+  }
+
+  .form-section {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section > span {
+    margin-bottom: -6px;
+  }
+
+  .photo-picker-previews {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .photo-picker-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .photo-picker-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .car-detail-hero {
+    height: 62svh;
+    min-height: 420px;
+    max-height: 620px;
+  }
+
+  .car-detail-title {
+    right: 5vw;
+    bottom: 36px;
+  }
+
+  .car-detail-title h1 {
+    font-size: clamp(2.4rem, 14vw, 3.6rem);
+    line-height: 0.95;
+  }
+
+  .edit-float {
+    right: 5vw;
+    bottom: 136px;
+    min-height: 44px;
+  }
+
+  .owner-line {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    gap: 12px;
+    padding: 22px 0;
+  }
+
+  .owner-line > button,
+  .owner-line > a {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .spec-board > div {
+    min-width: 0;
+  }
+
+  .spec-board b {
+    font-size: clamp(1rem, 6vw, 1.3rem);
+  }
+
+  .rating-panel {
+    gap: 22px;
+    padding: 30px 0;
+  }
+
+  .rating-panel > div:nth-child(2) > div {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .rating-panel button {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+  }
+
+  .car-story h2 br {
+    display: none;
+  }
+
+  .composer > div:last-child > div {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .composer .primary {
+    width: 100%;
+  }
+
+  .post-meta {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .post-meta > a {
+    max-width: none;
+    margin-left: 0;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .post-copy > div {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  .post-copy button:last-child {
+    margin-left: 0;
+  }
+
+  .post-detail-head > div {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .comment-list > article {
+    grid-template-columns: 38px minmax(0, 1fr) 30px;
+    gap: 10px;
+  }
+
+  .comment-list time {
+    display: block;
+    margin: 5px 0 0;
+  }
+
+  .catalog-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-filters select,
+  .catalog-filters input,
+  .catalog-filters select:last-of-type,
+  .catalog-filters button {
+    width: 100%;
+    min-height: 48px;
+    grid-column: auto;
+  }
+
+  .pagination {
+    gap: 8px;
+  }
+
+  .pagination button {
+    min-height: 44px;
+    padding: 10px 13px;
+  }
+
+  .profile-head {
+    gap: 20px;
+  }
+
+  .profile-settings {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .profile-stats > div {
+    padding: 24px 16px;
+  }
+
+  .profile-car-grid img {
+    min-height: 0;
+    aspect-ratio: 16 / 10;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row > div,
+  .stats-row > div:first-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    grid-column: auto;
+  }
+
+  .stats-row > div:last-child {
+    border-bottom: 0;
+  }
+
+  .service-record-meta {
+    align-items: flex-start;
+  }
+
+  .service-record-meta span {
+    min-width: 0;
+  }
+
+  .service-record-meta b {
+    width: 100%;
+  }
+
+  .service-record-meta button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .record-modal {
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .record-modal > div {
+    min-height: 100dvh;
+    padding-top: max(76px, calc(48px + env(safe-area-inset-top)));
+  }
+
+  .record-modal h2 {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+  }
+
+  .modal-close {
+    top: max(14px, env(safe-area-inset-top));
+    width: 44px;
+    height: 44px;
+  }
+
+  .messages-title {
+    padding: 28px 18px 20px;
+  }
+
+  .messages-title h1 {
+    font-size: clamp(2.25rem, 12vw, 3rem);
+  }
+
+  .conversation-items > a {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .conversation-items p {
+    max-width: none;
+  }
+
+  .unread-count {
+    right: 16px;
+  }
+
+  .chat-head {
+    gap: 9px;
+    padding: 0 12px;
+  }
+
+  .chat-head > a:last-child {
+    flex: none;
+  }
+
+  .message-stream {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .message-bubble,
+  .community-message {
+    max-width: 90%;
+  }
+
+  .message-bubble p,
+  .community-message p {
+    overflow-wrap: anywhere;
+  }
+
+  .message-composer,
+  .community-composer {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    grid-template-columns: minmax(0, 1fr) 48px;
+  }
+
+  .community-chat-page {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .community-chat-shell {
+    min-height: calc(100dvh - 114px);
+  }
+
+  .community-chat-title {
+    align-items: flex-start;
+  }
+
+  .community-chat-title h1 {
+    font-size: clamp(1.55rem, 8vw, 2rem);
+  }
+
+  footer {
+    grid-template-columns: 1fr;
+  }
+
+  footer > .footer-about,
+  footer > nav,
+  footer > small {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand {
+    font-size: 16px;
+  }
+
+  .photo-picker-previews {
+    grid-template-columns: 1fr;
+  }
+
+  .car-detail-title h1,
+  .inner-page > h1,
+  .garage-title h1,
+  .feed-head h1,
+  .profile-head h1,
+  .settings-layout h1,
+  .service-hero h1 {
+    font-size: 2.35rem;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-stats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .profile-stats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .chat-head > a:last-child {
+    display: none;
+  }
+
+  .message-composer,
+  .community-composer {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+}

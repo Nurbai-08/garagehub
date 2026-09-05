@@ -282,7 +282,7 @@ async def user_cars(username: str, session: AsyncSession = Depends(get_session))
 
 @app.get("/api/v1/cars/{car_id}", response_model=CarOutput)
 async def get_car(car_id: uuid.UUID, session: AsyncSession = Depends(get_session), user: User | None = Depends(optional_user)) -> CarOutput:
-    visibility = Car.is_public.is_(True)
+    visibility: ColumnElement[bool] = Car.is_public.is_(True)
     if user:
         visibility = or_(visibility, Car.owner_id == user.id)
     row = (await session.execute(select(Car, User.username).join(User).where(Car.id == car_id, visibility))).one_or_none()
