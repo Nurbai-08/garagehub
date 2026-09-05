@@ -1,0 +1,56 @@
+.car-form-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+#photo-help,
+.photo-edit-help {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 12px;
+}
+
+.photo-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+}
+
+.car-form .photo-picker-previews figure {
+  aspect-ratio: auto;
+}
+
+.car-form .photo-picker-previews img {
+  display: block;
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.car-form .photo-picker-previews figcaption {
+  position: static;
+  display: inline-block;
+  margin: 6px 6px 0;
+}
+
+.photo-picker-actions button {
+  border: 1px solid #aaa398;
+  border-radius: 4px;
+  background: var(--cream);
+  color: #171717;
+  font-size: 11px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.photo-picker-actions button:disabled,
+.photo-drop:has(input:disabled) {
+  opacity: 0.6;
+}
+
+.photo-drop:focus-within {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+}

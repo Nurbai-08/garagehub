@@ -124,7 +124,7 @@ function FeaturedCars() {
 function Stories() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["posts", "home"],
-    queryFn: getPosts,
+    queryFn: () => getPosts(),
   });
   const stories = data?.items.slice(0, 3) ?? [];
   const showsPlaceholder = !isLoading && (isError || stories.length === 0);

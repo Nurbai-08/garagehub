@@ -31,9 +31,10 @@ import { apiMessage } from "@/shared/api";
 export function FeedPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["posts"],
-    queryFn: getPosts,
+    queryKey: ["posts", page],
+    queryFn: () => getPosts(page),
   });
   const { data: ownCars = [] } = useQuery({
     queryKey: ["my-cars"],
@@ -49,6 +50,8 @@ export function FeedPage() {
     onSuccess: async () => {
       setContent("");
       setComposer(false);
+      setPage(1);
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
       await queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
     onError: (value) => setError(apiMessage(value)),
@@ -63,7 +66,7 @@ export function FeedPage() {
   };
 
   return (
-    <main className="feed-page">
+    <main id="main-content" className="feed-page">
       <section className="feed-head">
         <div>
           <p className="kicker">Лента друзей</p>
@@ -87,12 +90,16 @@ export function FeedPage() {
         <section className="composer">
           <div className="avatar">{user?.username[0].toUpperCase()}</div>
           <div>
+            {!ownCars.some((car) => car.is_public) && (
+              <p>Для публикации нужна публичная машина. <Link to="/garage">Открыть подборку</Link> или <Link to="/garage/new">добавить машину</Link>.</p>
+            )}
             <select
+              aria-label="Автомобиль для публикации"
               value={carId}
               onChange={(event) => setCarId(event.target.value)}
             >
               <option value="">Выберите машину</option>
-              {ownCars.map((car) => (
+              {ownCars.filter((car) => car.is_public).map((car) => (
                 <option key={car.id} value={car.id}>
                   {car.brand} {car.model}
                 </option>
@@ -110,7 +117,7 @@ export function FeedPage() {
               <button
                 className="primary"
                 onClick={submit}
-                disabled={publish.isPending}
+                disabled={publish.isPending || !carId || !content.trim()}
               >
                 {publish.isPending ? "Публикуем…" : "Опубликовать"}{" "}
                 <Send size={16} />
@@ -143,6 +150,13 @@ export function FeedPage() {
           </div>
         )}
       </section>
+      {data && data.total_pages > 1 && (
+        <nav className="pagination" aria-label="Страницы ленты">
+          <button disabled={page === 1} onClick={() => setPage(page - 1)}>Назад</button>
+          <span>{page} / {data.total_pages}</span>
+          <button disabled={page >= data.total_pages} onClick={() => setPage(page + 1)}>Далее</button>
+        </nav>
+      )}
     </main>
   );
 }
@@ -150,20 +164,15 @@ export function FeedPage() {
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [liked, setLiked] = useState(false);
-  const [optimisticLikes, setOptimisticLikes] = useState(post.likes_count);
+  const liked = post.is_liked ?? false;
   const toggle = useMutation({
-    mutationFn: () => (liked ? unlikePost(post.id) : likePost(post.id)),
-    onMutate: () => {
-      setLiked(!liked);
-      setOptimisticLikes((value) => value + (liked ? -1 : 1));
+    mutationFn: (wasLiked: boolean) => wasLiked ? unlikePost(post.id) : likePost(post.id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["posts"] }),
+        queryClient.invalidateQueries({ queryKey: ["post", post.id] }),
+      ]);
     },
-    onError: () => {
-      setLiked(!liked);
-      setOptimisticLikes((value) => value + (liked ? 1 : -1));
-    },
-    onSettled: () =>
-      void queryClient.invalidateQueries({ queryKey: ["posts"] }),
   });
   return (
     <article className="feed-post">
@@ -192,12 +201,15 @@ function PostCard({ post }: { post: Post }) {
       </Link>
       <div className="post-copy">
         <p>{post.content}</p>
+        {toggle.isError && <p className="field-error" role="alert">{apiMessage(toggle.error)}</p>}
         <div>
           <button
             className={liked ? "liked" : ""}
-            onClick={() => (user ? toggle.mutate() : undefined)}
+            onClick={() => user && toggle.mutate(liked)}
+            disabled={!user || toggle.isPending}
+            aria-label={liked ? "Убрать лайк" : user ? "Нравится" : "Войдите, чтобы поставить лайк"}
           >
-            <Heart fill={liked ? "currentColor" : "none"} /> {optimisticLikes}
+            <Heart fill={liked ? "currentColor" : "none"} /> {post.likes_count}
           </button>
           <Link to={`/posts/${post.id}`}>
             <MessageCircle /> {post.comments_count}
@@ -229,31 +241,38 @@ export function PostDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["comments", postId] }),
         queryClient.invalidateQueries({ queryKey: ["post", postId] }),
+        queryClient.invalidateQueries({ queryKey: ["posts"] }),
       ]);
     },
     onError: (value) => setError(apiMessage(value)),
   });
   const remove = useMutation({
     mutationFn: deleteComment,
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["comments", postId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["comments", postId] }),
+        queryClient.invalidateQueries({ queryKey: ["post", postId] }),
+        queryClient.invalidateQueries({ queryKey: ["posts"] }),
+      ]);
+    },
+    onError: (value) => setError(apiMessage(value)),
   });
   if (isLoading)
     return (
-      <main className="inner-page">
+      <main id="main-content" className="inner-page">
         <div className="page-loader">Загружаем историю…</div>
       </main>
     );
   if (!post)
     return (
-      <main className="inner-page">
+      <main id="main-content" className="inner-page">
         <div className="empty">
           <h2>Публикация не найдена</h2>
         </div>
       </main>
     );
   return (
-    <main className="post-detail">
+    <main id="main-content" className="post-detail">
       <Link to="/feed" className="back">
         <ArrowLeft /> Все истории
       </Link>
@@ -312,6 +331,7 @@ export function PostDetailPage() {
               {user?.username === comment.author_username && (
                 <button
                   onClick={() => remove.mutate(comment.id)}
+                  disabled={remove.isPending}
                   aria-label="Удалить комментарий"
                 >
                   <Trash2 />
@@ -334,13 +354,19 @@ export function FavoritesPage() {
   const queryClient = useQueryClient();
   const remove = useMutation({
     mutationFn: unfavoriteCar,
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["favorites"] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["favorites"] }),
+        queryClient.invalidateQueries({ queryKey: ["car"] }),
+        queryClient.invalidateQueries({ queryKey: ["cars"] }),
+      ]);
+    },
   });
   return (
-    <main className="inner-page favorites-page">
+    <main id="main-content" className="inner-page favorites-page">
       <p className="kicker">Сохранил себе</p>
       <h1>Избранное</h1>
+      {remove.isError && <p role="alert" className="field-error">{apiMessage(remove.error)}</p>}
       {isLoading ? (
         <div className="catalog">
           <div className="skeleton" />
@@ -364,7 +390,7 @@ export function FavoritesPage() {
                 <span>
                   <Star fill="currentColor" /> {car.rating_avg.toFixed(1)}
                 </span>
-                <button onClick={() => remove.mutate(car.id)}>
+                <button disabled={remove.isPending} onClick={() => remove.mutate(car.id)}>
                   <Bookmark fill="currentColor" /> Убрать
                 </button>
               </div>

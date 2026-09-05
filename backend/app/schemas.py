@@ -2,8 +2,11 @@ import re
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+ImageUrl = Annotated[str, Field(min_length=1, max_length=500)]
 
 
 class RegisterInput(BaseModel):
@@ -21,7 +24,7 @@ class RegisterInput(BaseModel):
 
 class LoginInput(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=128)
 
 
 class UserOutput(BaseModel):
@@ -67,9 +70,14 @@ class CarCreate(BaseModel):
     trim: str | None = Field(default=None, max_length=100)
     vin: str | None = Field(default=None, min_length=11, max_length=32)
     cover_image_url: str = Field(min_length=1, max_length=500)
-    image_urls: list[str] = Field(min_length=3, max_length=5)
+    image_urls: list[ImageUrl] = Field(min_length=1, max_length=5)
     description: str | None = Field(default=None, max_length=5000)
     is_public: bool = True
+
+    @field_validator("brand", "model", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class CarUpdate(BaseModel):
@@ -83,9 +91,22 @@ class CarUpdate(BaseModel):
     trim: str | None = Field(default=None, max_length=100)
     vin: str | None = Field(default=None, min_length=11, max_length=32)
     cover_image_url: str | None = Field(default=None, min_length=1, max_length=500)
-    image_urls: list[str] | None = Field(default=None, min_length=3, max_length=5)
+    image_urls: list[ImageUrl] | None = Field(default=None, min_length=1, max_length=5)
     description: str | None = Field(default=None, max_length=5000)
     is_public: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, values):
+        required = {"brand", "model", "year", "mileage", "cover_image_url", "image_urls", "is_public"}
+        if isinstance(values, dict) and any(key in values and values[key] is None for key in required):
+            raise ValueError("Обязательные поля не могут быть пустыми")
+        return values
+
+    @field_validator("brand", "model", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class CarOutput(BaseModel):
@@ -97,7 +118,7 @@ class CarOutput(BaseModel):
     drivetrain: str | None
     mileage: int
     cover_image_url: str
-    image_urls: list[str]
+    image_urls: list[ImageUrl]
     description: str | None
     generation: str | None
     trim: str | None
@@ -106,6 +127,8 @@ class CarOutput(BaseModel):
     rating_avg: float
     rating_count: int
     favorites_count: int
+    is_favorite: bool = False
+    my_rating: int | None = None
 
 
 class OwnerCarOutput(CarOutput):
@@ -124,6 +147,11 @@ class PostCreate(BaseModel):
     car_id: uuid.UUID
     content: str = Field(min_length=1, max_length=2000)
 
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
 
 class PostOutput(BaseModel):
     id: uuid.UUID
@@ -134,6 +162,7 @@ class PostOutput(BaseModel):
     content: str
     created_at: datetime
     likes_count: int
+    is_liked: bool = False
     comments_count: int
 
 
@@ -147,6 +176,11 @@ class PaginatedPosts(BaseModel):
 
 class CommentCreate(BaseModel):
     content: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class CommentOutput(BaseModel):
@@ -206,6 +240,11 @@ class ServiceRecordInput(BaseModel):
     location: str | None = Field(default=None, max_length=160)
     is_public: bool = False
 
+    @field_validator("category", "title", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
 
 class ServiceRecordOutput(ServiceRecordInput):
     model_config = ConfigDict(from_attributes=True)
@@ -224,6 +263,19 @@ class ServiceRecordUpdate(BaseModel):
     currency: str | None = Field(default=None, min_length=3, max_length=3)
     location: str | None = Field(default=None, max_length=160)
     is_public: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, values):
+        required = {"category", "title", "service_date", "cost", "currency", "is_public"}
+        if isinstance(values, dict) and any(key in values and values[key] is None for key in required):
+            raise ValueError("Обязательные поля не могут быть пустыми")
+        return values
+
+    @field_validator("category", "title", mode="before")
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class ServiceStats(BaseModel):

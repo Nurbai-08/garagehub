@@ -7,7 +7,7 @@ import {
   MapPin,
   Settings,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getUserCars } from "@/entities/car";
 import { getProfile, updateProfile } from "@/entities/user";
@@ -25,26 +25,26 @@ export function PublicProfilePage() {
     queryKey: ["profile", username],
     queryFn: () => getProfile(username),
   });
-  const { data: cars = [] } = useQuery({
+  const { data: cars = [], isLoading: carsLoading, isError: carsError, refetch: reloadCars } = useQuery({
     queryKey: ["user-cars", username],
     queryFn: () => getUserCars(username),
   });
   if (isLoading)
     return (
-      <main className="inner-page">
+      <main id="main-content" className="inner-page">
         <div className="page-loader">Открываем профиль…</div>
       </main>
     );
   if (isError || !profile)
     return (
-      <main className="inner-page">
+      <main id="main-content" className="inner-page">
         <div className="empty">
           <h2>Пользователь не найден</h2>
         </div>
       </main>
     );
   return (
-    <main className="profile-page">
+    <main id="main-content" className="profile-page">
       <section className="profile-head">
         <div className="profile-avatar">
           {profile.avatar_url ? (
@@ -91,7 +91,7 @@ export function PublicProfilePage() {
           <p className="kicker">Машины пользователя</p>
           <h2>В гараже</h2>
         </div>
-        {cars.length ? (
+        {carsLoading ? <div className="page-loader">Загружаем машины…</div> : carsError ? <div className="error">Не удалось загрузить машины. <button onClick={() => void reloadCars()}>Повторить</button></div> : cars.length ? (
           <div className="profile-car-grid">
             {cars.map((car) => (
               <Link to={`/cars/${car.id}`} key={car.id}>
@@ -127,17 +127,18 @@ export function ProfileSettingsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading, isError, refetch } = useQuery({
     queryKey: ["profile", user?.username],
     queryFn: () => getProfile(user!.username),
     enabled: Boolean(user),
   });
+  const dirty = useRef(false);
   const [displayName, setDisplayName] = useState("");
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [message, setMessage] = useState("");
   useEffect(() => {
-    if (profile) {
+    if (profile && !dirty.current) {
       setDisplayName(profile.display_name ?? "");
       setCity(profile.city ?? "");
       setBio(profile.bio ?? "");
@@ -150,12 +151,14 @@ export function ProfileSettingsPage() {
       await queryClient.invalidateQueries({
         queryKey: ["profile", user?.username],
       });
-      window.setTimeout(() => navigate(`/users/${user?.username}`), 600);
+      navigate(`/users/${user?.username}`);
     },
     onError: (error) => setMessage(apiMessage(error)),
   });
+  if (isLoading) return <main id="main-content" className="inner-page"><div className="page-loader">Загружаем настройки…</div></main>;
+  if (isError) return <main id="main-content" className="inner-page"><div className="error">Не удалось загрузить профиль. <button onClick={() => void refetch()}>Повторить</button></div></main>;
   return (
-    <main className="settings-page">
+    <main id="main-content" className="settings-page">
       <Link to={`/users/${user?.username}`} className="back">
         <ArrowLeft /> Профиль
       </Link>
@@ -168,6 +171,7 @@ export function ProfileSettingsPage() {
           </p>
         </div>
         <form
+          onChange={() => { dirty.current = true; }}
           onSubmit={(event) => {
             event.preventDefault();
             save.mutate({

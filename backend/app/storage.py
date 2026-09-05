@@ -1,9 +1,12 @@
 import uuid
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from typing import Protocol
 
 from fastapi import HTTPException, UploadFile
+from PIL import Image
+from starlette.concurrency import run_in_threadpool
 from vercel.blob import AsyncBlobClient
 
 from app.config import settings
@@ -78,7 +81,23 @@ async def read_validated_image(upload: UploadFile, max_size_mb: int) -> tuple[by
     }
     if not signatures[suffix]:
         raise HTTPException(status_code=422, detail="Содержимое файла не соответствует формату изображения")
+    await run_in_threadpool(verify_image, content, suffix)
     return content, suffix, content_type
+
+
+def verify_image(content: bytes, suffix: str) -> None:
+    formats = {".jpg": "JPEG", ".png": "PNG", ".webp": "WEBP"}
+    try:
+        with Image.open(BytesIO(content), formats=[formats[suffix]]) as image:
+            if image.width * image.height > 40_000_000:
+                raise HTTPException(status_code=413, detail="Разрешение изображения не должно превышать 40 мегапикселей")
+            image.verify()
+        with Image.open(BytesIO(content), formats=[formats[suffix]]) as image:
+            image.load()
+    except Image.DecompressionBombError as error:
+        raise HTTPException(status_code=413, detail="Слишком большое разрешение изображения") from error
+    except (OSError, SyntaxError, ValueError) as error:
+        raise HTTPException(status_code=422, detail="Изображение повреждено или не читается") from error
 
 
 def create_image_storage() -> ImageStorage:

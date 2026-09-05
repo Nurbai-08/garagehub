@@ -16,6 +16,8 @@ export type Car = {
   rating_avg: number;
   rating_count: number;
   favorites_count: number;
+  is_favorite?: boolean;
+  my_rating?: number | null;
 };
 
 export type CarInput = {

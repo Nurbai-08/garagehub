@@ -55,6 +55,10 @@ const CommunityChatPage = lazy(() =>
   })),
 );
 
+const ServicePage = lazy(() =>
+  import("@/pages/service").then((module) => ({ default: module.ServicePage })),
+);
+
 const protectedPage = (page: React.ReactNode) => (
   <RequireAuth>{page}</RequireAuth>
 );
@@ -65,7 +69,7 @@ export default function App() {
       <Header />
       <Suspense
         fallback={
-          <main className="inner-page">
+          <main id="main-content" className="inner-page">
             <div className="page-loader">Загружаем страницу…</div>
           </main>
         }
@@ -86,6 +90,7 @@ export default function App() {
             path="/garage/:carId/edit"
             element={protectedPage(<CarFormPage mode="edit" />)}
           />
+          <Route path="/garage/:carId/service" element={protectedPage(<ServicePage />)} />
           <Route path="/favorites" element={protectedPage(<FavoritesPage />)} />
           <Route path="/messages" element={protectedPage(<MessagesPage />)} />
           <Route

@@ -11,33 +11,39 @@ import {
 
 export function ExplorePage() {
   const [params, setParams] = useSearchParams();
-  const [search, setSearch] = useState(params.get("search") ?? "");
+  const [draft, setDraft] = useState<{ value: string; from: string } | null>(null);
+  const search = draft?.from === params.toString() ? draft.value : params.get("search") ?? "";
+  const page = validNumber(params.get("page"), 1) ?? 1;
   const filters: CarFilters = {
     search: params.get("search") || undefined,
     brand: params.get("brand") || undefined,
-    year_from: params.get("year_from")
-      ? Number(params.get("year_from"))
-      : undefined,
-    power_from: params.get("power_from")
-      ? Number(params.get("power_from"))
-      : undefined,
+    year_from: validNumber(params.get("year_from"), 1886),
+    power_from: validNumber(params.get("power_from"), 0),
     drivetrain: params.get("drivetrain") || undefined,
-    sort: (params.get("sort") as CarFilters["sort"]) || "newest",
+    sort: ["newest", "rating", "popular"].includes(params.get("sort") ?? "")
+      ? params.get("sort") as CarFilters["sort"] : "newest",
+    page,
   };
 
   useEffect(() => {
+    if (!draft || draft.from !== params.toString()) return;
     const timer = window.setTimeout(() => {
       const next = new URLSearchParams(params);
       if (search.trim()) next.set("search", search.trim());
       else next.delete("search");
-      if (next.toString() !== params.toString())
-        setParams(next, { replace: true });
+      next.delete("page");
+      if (next.toString() !== params.toString()) setParams(next, { replace: true });
+      setDraft(null);
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [search, params, setParams]);
+  }, [draft, search, params, setParams]);
 
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(params);
+    if (key !== "page") next.delete("page");
+    if (search.trim()) next.set("search", search.trim());
+    else next.delete("search");
+    setDraft(null);
     if (value) next.set(key, value);
     else next.delete(key);
     setParams(next);
@@ -47,20 +53,21 @@ export function ExplorePage() {
     queryFn: getCarBrands,
   });
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["cars", params.toString()],
+    queryKey: ["cars", filters],
     queryFn: () => getCars(filters),
   });
   const cars = data?.items ?? [];
 
   return (
-    <main className="inner-page">
+    <main id="main-content" className="inner-page">
       <p className="kicker">Общий гараж</p>
       <h1>Машины друзей</h1>
       <div className="searchbar">
         <Search size={19} />
         <input
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => setDraft({ value: event.target.value, from: params.toString() })}
+          aria-label="Поиск автомобилей"
           placeholder="Марка, модель или пользователь"
         />
       </div>
@@ -110,7 +117,7 @@ export function ExplorePage() {
         {params.size > 0 && (
           <button
             onClick={() => {
-              setSearch("");
+              setDraft(null);
               setParams({});
             }}
           >
@@ -130,7 +137,7 @@ export function ExplorePage() {
             <div className="skeleton" key={n} />
           ))}
         </div>
-      ) : cars.length ? (
+      ) : isError ? null : cars.length ? (
         <div className="catalog">
           {cars.map((car) => (
             <CarCard key={car.id} car={car} />
@@ -143,6 +150,19 @@ export function ExplorePage() {
           <p>Попробуйте изменить запрос.</p>
         </div>
       )}
+      {data && data.total_pages > 1 && (
+        <nav className="pagination" aria-label="Страницы каталога">
+          <button disabled={page === 1} onClick={() => updateFilter("page", String(page - 1))}>Назад</button>
+          <span>{page} / {data.total_pages}</span>
+          <button disabled={page >= data.total_pages} onClick={() => updateFilter("page", String(page + 1))}>Далее</button>
+        </nav>
+      )}
     </main>
   );
+}
+
+function validNumber(value: string | null, minimum: number) {
+  if (!value) return undefined;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= minimum ? number : undefined;
 }

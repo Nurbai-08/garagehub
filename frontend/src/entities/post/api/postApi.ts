@@ -1,7 +1,7 @@
 import { api } from '@/shared/api'
 import type { Comment, PaginatedPosts, Post } from '../model/types'
 
-export async function getPosts() { return (await api.get<PaginatedPosts>('/posts')).data }
+export async function getPosts(page = 1) { return (await api.get<PaginatedPosts>('/posts', { params: { page } })).data }
 export async function getPost(id: string) { return (await api.get<Post>(`/posts/${id}`)).data }
 export async function createPost(input: { car_id: string; content: string }) { return (await api.post<Post>('/posts', input)).data }
 export async function likePost(id: string) { await api.put(`/posts/${id}/like`) }

@@ -22,12 +22,17 @@ function messageTime(value: string) {
 
 export function MessagesPage() {
   const { conversationId } = useParams();
+  return <MessagesView key={conversationId ?? "list"} />;
+}
+
+function MessagesView() {
+  const { conversationId } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
-  const { data: conversations = [], isLoading: conversationsLoading } =
+  const { data: conversations = [], isLoading: conversationsLoading, isError: conversationsError, refetch: reloadConversations } =
     useQuery({
       queryKey: ["conversations"],
       queryFn: getConversations,
@@ -38,7 +43,7 @@ export function MessagesPage() {
     queryFn: () => getConversation(conversationId!),
     enabled: Boolean(conversationId),
   });
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading, isError: messagesError, refetch: reloadMessages } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: () => getMessages(conversationId!),
     enabled: Boolean(conversationId),
@@ -58,9 +63,10 @@ export function MessagesPage() {
     onError: (value) => setError(apiMessage(value)),
   });
 
+  const lastMessageId = messages.at(-1)?.id;
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [lastMessageId]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -71,7 +77,7 @@ export function MessagesPage() {
   };
 
   return (
-    <main className="messages-page">
+    <main id="main-content" className="messages-page">
       <aside
         className={
           conversationId
@@ -94,6 +100,8 @@ export function MessagesPage() {
         </Link>
         {conversationsLoading ? (
           <div className="conversation-loading">Загружаем диалоги…</div>
+        ) : conversationsError ? (
+          <div className="error">Не удалось загрузить диалоги. <button onClick={() => void reloadConversations()}>Повторить</button></div>
         ) : conversations.length ? (
           <div className="conversation-items">
             {conversations.map((conversation) => (
@@ -176,6 +184,8 @@ export function MessagesPage() {
             <div className="message-stream">
               {messagesLoading ? (
                 <div className="conversation-loading">Загружаем сообщения…</div>
+              ) : messagesError ? (
+                <div className="error">Не удалось загрузить сообщения. <button onClick={() => void reloadMessages()}>Повторить</button></div>
               ) : messages.length ? (
                 messages.map((message) => (
                   <article
@@ -199,6 +209,8 @@ export function MessagesPage() {
             </div>
             <form className="message-composer" onSubmit={submit}>
               <textarea
+                disabled={send.isPending || !selected}
+                aria-label="Сообщение"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 maxLength={2000}
@@ -207,7 +219,7 @@ export function MessagesPage() {
               />
               <button
                 type="submit"
-                disabled={!content.trim() || send.isPending}
+                disabled={!content.trim() || send.isPending || !selected}
                 aria-label="Отправить"
               >
                 <Send />

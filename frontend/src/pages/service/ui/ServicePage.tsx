@@ -46,18 +46,19 @@ const emptyForm: ServiceRecordInput = {
 export function ServicePage() {
   const { carId = "" } = useParams();
   const queryClient = useQueryClient();
+  const [currency, setCurrency] = useState("KGS");
   const { data: cars = [] } = useQuery({
     queryKey: ["my-cars"],
     queryFn: getMyCars,
   });
   const car = cars.find((item) => item.id === carId);
-  const { data: records = [], isLoading } = useQuery({
+  const { data: records = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["service-records", carId],
     queryFn: () => getServiceRecords(carId),
   });
-  const { data: stats } = useQuery({
-    queryKey: ["service-stats", carId],
-    queryFn: () => getServiceStats(carId),
+  const { data: stats, isError: statsError } = useQuery({
+    queryKey: ["service-stats", carId, currency],
+    queryFn: () => getServiceStats(carId, currency),
   });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ServiceRecordInput>(emptyForm);
@@ -81,6 +82,7 @@ export function ServicePage() {
   const remove = useMutation({
     mutationFn: deleteServiceRecord,
     onSuccess: refresh,
+    onError: (value) => setError(apiMessage(value)),
   });
   const maxCategory = useMemo(
     () => Math.max(1, ...Object.values(stats?.by_category ?? {}).map(Number)),
@@ -104,8 +106,9 @@ export function ServicePage() {
     });
   };
 
+  if (isError) return <main id="main-content" className="inner-page"><div className="error">Не удалось открыть историю обслуживания. <button onClick={() => void refetch()}>Повторить</button><Link to="/garage">В подборку</Link></div></main>;
   return (
-    <main className="service-page">
+    <main id="main-content" className="service-page">
       <section className="service-hero">
         <Link to="/garage" className="back">
           <ArrowLeft /> Мой гараж
@@ -120,6 +123,14 @@ export function ServicePage() {
         </button>
       </section>
       <section className="service-content">
+        <label className="field">
+          <span>Валюта отчёта</span>
+          <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+            {["KGS", "RUB", "USD", "EUR"].map((value) => <option key={value}>{value}</option>)}
+          </select>
+        </label>
+        {statsError && <p className="field-error">Не удалось загрузить суммы расходов.</p>}
+        {error && !open && <p className="field-error" role="alert">{error}</p>}
         <div className="stats-row">
           <div>
             <Receipt />
@@ -183,7 +194,7 @@ export function ServicePage() {
                         {Number(record.cost).toLocaleString("ru-RU")}{" "}
                         {record.currency}
                       </b>
-                      <button onClick={() => remove.mutate(record.id)}>
+                      <button disabled={remove.isPending} aria-label="Удалить запись" onClick={() => remove.mutate(record.id)}>
                         <Trash2 />
                       </button>
                     </div>
@@ -277,6 +288,8 @@ export function ServicePage() {
                 <span>Стоимость *</span>
                 <input
                   type="number"
+                  min="0"
+                  step="0.01"
                   value={form.cost}
                   onChange={(event) =>
                     update("cost", Number(event.target.value))
@@ -315,14 +328,7 @@ export function ServicePage() {
                 />
               </label>
             </div>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={form.is_public}
-                onChange={(event) => update("is_public", event.target.checked)}
-              />
-              <span>✓</span>Показывать эту запись публично
-            </label>
+            <p>История обслуживания доступна только вам.</p>
             {error && <div className="form-error">{error}</div>}
             <button
               className="primary"

@@ -8,7 +8,8 @@ import jwt
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -45,7 +46,7 @@ from app.schemas import (
     TokenOutput,
     UserOutput,
 )
-from app.security import create_token, current_user, hash_password, token_digest, verify_password
+from app.security import create_token, current_user, hash_password, optional_user, token_digest, verify_password
 from app.security_middleware import SecurityMiddleware
 from app.storage import LocalImageStorage, image_storage
 
@@ -104,7 +105,11 @@ async def register(data: RegisterInput, response: Response, session: AsyncSessio
         raise HTTPException(status_code=409, detail={"code": "USER_EXISTS", "message": "Email или username уже используются"})
     user = User(email=data.email.lower(), username=data.username, password_hash=hash_password(data.password))
     session.add(user)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Email или username уже используются") from None
     result, refresh = auth_response(user, response, session)
     session.add(refresh)
     await session.commit()
@@ -114,7 +119,7 @@ async def register(data: RegisterInput, response: Response, session: AsyncSessio
 @app.post("/api/v1/auth/login", response_model=TokenOutput)
 async def login(data: LoginInput, response: Response, session: AsyncSession = Depends(get_session)) -> TokenOutput:
     user = await session.scalar(select(User).where(func.lower(User.email) == data.email.lower()))
-    if user is None or not verify_password(data.password, user.password_hash):
+    if user is None or not user.is_active or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
     result, refresh = auth_response(user, response, session)
     session.add(refresh)
@@ -129,7 +134,7 @@ async def refresh(request: Request, response: Response, session: AsyncSession = 
         raise HTTPException(status_code=401, detail="Сессия истекла")
     try:
         payload = jwt.decode(raw, settings.jwt_secret, algorithms=["HS256"])
-        stored = await session.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_digest(raw), RefreshToken.revoked_at.is_(None)))
+        stored = await session.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_digest(raw), RefreshToken.revoked_at.is_(None)).with_for_update())
         user = await session.get(User, uuid.UUID(payload["sub"])) if payload.get("type") == "refresh" else None
     except (jwt.InvalidTokenError, KeyError, ValueError):
         user = None
@@ -137,7 +142,7 @@ async def refresh(request: Request, response: Response, session: AsyncSession = 
     expires_at = stored.expires_at if stored else None
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
-    if user is None or stored is None or expires_at is None or expires_at < datetime.now(UTC):
+    if user is None or not user.is_active or stored is None or expires_at is None or expires_at < datetime.now(UTC):
         raise HTTPException(status_code=401, detail="Сессия истекла")
     stored.revoked_at = datetime.now(UTC)
     result, next_refresh = auth_response(user, response, session)
@@ -168,7 +173,7 @@ async def public_profile(username: str, session: AsyncSession = Depends(get_sess
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     cars_count = int(await session.scalar(select(func.count(Car.id)).where(Car.owner_id == user.id, Car.is_public.is_(True))) or 0)
-    posts_count = int(await session.scalar(select(func.count(Post.id)).where(Post.author_id == user.id)) or 0)
+    posts_count = int(await session.scalar(select(func.count(Post.id)).join(Car).where(Post.author_id == user.id, Car.is_public.is_(True))) or 0)
     return PublicProfile(username=user.username, display_name=user.display_name, bio=user.bio, city=user.city, avatar_url=user.avatar_url, created_at=user.created_at, cars_count=cars_count, posts_count=posts_count)
 
 
@@ -224,7 +229,7 @@ async def cars(
         order = Car.rating_avg.desc()
     elif sort == "popular":
         order = Car.favorites_count.desc()
-    rows = (await session.execute(query.order_by(order).offset((page - 1) * page_size).limit(page_size))).all()
+    rows = (await session.execute(query.order_by(order, Car.id).offset((page - 1) * page_size).limit(page_size))).all()
     return PaginatedCars(items=[car_output(car, username) for car, username in rows], page=page, page_size=page_size, total=total, total_pages=math.ceil(total / page_size) if total else 0)
 
 
@@ -276,12 +281,20 @@ async def user_cars(username: str, session: AsyncSession = Depends(get_session))
 
 
 @app.get("/api/v1/cars/{car_id}", response_model=CarOutput)
-async def get_car(car_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> CarOutput:
-    row = (await session.execute(select(Car, User.username).join(User).where(Car.id == car_id, Car.is_public.is_(True)))).one_or_none()
+async def get_car(car_id: uuid.UUID, session: AsyncSession = Depends(get_session), user: User | None = Depends(optional_user)) -> CarOutput:
+    visibility = Car.is_public.is_(True)
+    if user:
+        visibility = or_(visibility, Car.owner_id == user.id)
+    row = (await session.execute(select(Car, User.username).join(User).where(Car.id == car_id, visibility))).one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="Автомобиль не найден")
     car, username = row
-    return car_output(car, username)
+    output = car_output(car, username)
+    if user:
+        output.is_favorite = await session.get(Favorite, (user.id, car.id)) is not None
+        rating = await session.get(CarRating, (user.id, car.id))
+        output.my_rating = rating.score if rating else None
+    return output
 
 
 @app.patch("/api/v1/cars/{car_id}", response_model=OwnerCarOutput)
@@ -370,9 +383,16 @@ async def start_conversation(car_id: uuid.UUID, user: User = Depends(current_use
     conversation = await session.scalar(select(Conversation).where(Conversation.user_one_id == first_id, Conversation.user_two_id == second_id))
     if conversation is None:
         conversation = Conversation(user_one_id=first_id, user_two_id=second_id)
-        session.add(conversation)
-        await session.commit()
-        await session.refresh(conversation)
+        try:
+            async with session.begin_nested():
+                session.add(conversation)
+                await session.flush()
+            await session.commit()
+            await session.refresh(conversation)
+        except IntegrityError:
+            conversation = await session.scalar(select(Conversation).where(Conversation.user_one_id == first_id, Conversation.user_two_id == second_id))
+            if conversation is None:
+                raise
     return await conversation_output(conversation, user, session)
 
 
@@ -394,12 +414,10 @@ async def messages(conversation_id: uuid.UUID, user: User = Depends(current_user
     rows = list((await session.execute(select(Message, User.username).join(User, User.id == Message.sender_id).where(Message.conversation_id == conversation_id).order_by(Message.created_at.desc()).limit(200))).all())
     rows.reverse()
     now = datetime.now(UTC)
-    changed = False
     output: list[MessageOutput] = []
     for message, username in rows:
         if message.sender_id != user.id and message.read_at is None:
             message.read_at = now
-            changed = True
         output.append(
             MessageOutput(
                 id=message.id,
@@ -410,8 +428,12 @@ async def messages(conversation_id: uuid.UUID, user: User = Depends(current_user
                 read_at=message.read_at,
             )
         )
-    if changed:
-        await session.commit()
+    await session.execute(update(Message).where(
+        Message.conversation_id == conversation_id,
+        Message.sender_id != user.id,
+        Message.read_at.is_(None),
+    ).values(read_at=now))
+    await session.commit()
     return output
 
 
@@ -462,22 +484,24 @@ def post_select():
         )
         .join(User, User.id == Post.author_id)
         .join(Car, Car.id == Post.car_id)
+        .where(Car.is_public.is_(True))
         .outerjoin(PostLike, PostLike.post_id == Post.id)
         .outerjoin(Comment, Comment.post_id == Post.id)
         .group_by(Post.id, User.username, Car.brand, Car.model, Car.cover_image_url)
     )
 
 
-def post_output(row: Any) -> PostOutput:
+def post_output(row: Any, is_liked: bool = False) -> PostOutput:
     post, username, brand, model, cover, likes, comments = row
-    return PostOutput(id=post.id, author_username=username, car_id=post.car_id, car_name=f"{brand} {model}", car_cover_url=cover, content=post.content, created_at=post.created_at, likes_count=likes, comments_count=comments)
+    return PostOutput(id=post.id, author_username=username, car_id=post.car_id, car_name=f"{brand} {model}", car_cover_url=cover, content=post.content, created_at=post.created_at, likes_count=likes, comments_count=comments, is_liked=is_liked)
 
 
 @app.get("/api/v1/posts", response_model=PaginatedPosts)
-async def posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=30), session: AsyncSession = Depends(get_session)) -> PaginatedPosts:
-    total = int(await session.scalar(select(func.count(Post.id))) or 0)
-    rows = (await session.execute(post_select().order_by(Post.created_at.desc()).offset((page - 1) * page_size).limit(page_size))).all()
-    return PaginatedPosts(items=[post_output(row) for row in rows], page=page, page_size=page_size, total=total, total_pages=math.ceil(total / page_size) if total else 0)
+async def posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=30), session: AsyncSession = Depends(get_session), user: User | None = Depends(optional_user)) -> PaginatedPosts:
+    total = int(await session.scalar(select(func.count(Post.id)).join(Car).where(Car.is_public.is_(True))) or 0)
+    rows = (await session.execute(post_select().order_by(Post.created_at.desc(), Post.id).offset((page - 1) * page_size).limit(page_size))).all()
+    liked = set(await session.scalars(select(PostLike.post_id).where(PostLike.user_id == user.id, PostLike.post_id.in_([row[0].id for row in rows])))) if user and rows else set()
+    return PaginatedPosts(items=[post_output(row, row[0].id in liked) for row in rows], page=page, page_size=page_size, total=total, total_pages=math.ceil(total / page_size) if total else 0)
 
 
 @app.post("/api/v1/posts", response_model=PostOutput, status_code=201)
@@ -485,6 +509,8 @@ async def create_post(data: PostCreate, user: User = Depends(current_user), sess
     car = await session.scalar(select(Car).where(Car.id == data.car_id, Car.owner_id == user.id))
     if car is None:
         raise HTTPException(status_code=403, detail="Публикацию можно создать только для своего автомобиля")
+    if not car.is_public:
+        raise HTTPException(status_code=422, detail="Сначала сделайте автомобиль публичным")
     post = Post(author_id=user.id, car_id=car.id, content=data.content)
     session.add(post)
     await session.commit()
@@ -493,11 +519,12 @@ async def create_post(data: PostCreate, user: User = Depends(current_user), sess
 
 
 @app.get("/api/v1/posts/{post_id}", response_model=PostOutput)
-async def get_post(post_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> PostOutput:
+async def get_post(post_id: uuid.UUID, session: AsyncSession = Depends(get_session), user: User | None = Depends(optional_user)) -> PostOutput:
     row = (await session.execute(post_select().where(Post.id == post_id))).one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="Публикация не найдена")
-    return post_output(row)
+    liked = await session.get(PostLike, (user.id, post_id)) is not None if user else False
+    return post_output(row, liked)
 
 
 @app.delete("/api/v1/posts/{post_id}", status_code=204)
@@ -513,7 +540,7 @@ async def delete_post(post_id: uuid.UUID, user: User = Depends(current_user), se
 
 @app.put("/api/v1/posts/{post_id}/like", status_code=204)
 async def like_post(post_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> None:
-    if await session.get(Post, post_id) is None:
+    if await session.scalar(select(Post).join(Car).where(Post.id == post_id, Car.is_public.is_(True)).with_for_update(of=Post)) is None:
         raise HTTPException(status_code=404, detail="Публикация не найдена")
     exists = await session.scalar(select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user.id))
     if exists is None:
@@ -523,6 +550,7 @@ async def like_post(post_id: uuid.UUID, user: User = Depends(current_user), sess
 
 @app.delete("/api/v1/posts/{post_id}/like", status_code=204)
 async def unlike_post(post_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> None:
+    await session.scalar(select(Post).where(Post.id == post_id).with_for_update())
     like = await session.scalar(select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user.id))
     if like:
         await session.delete(like)
@@ -531,13 +559,15 @@ async def unlike_post(post_id: uuid.UUID, user: User = Depends(current_user), se
 
 @app.get("/api/v1/posts/{post_id}/comments", response_model=list[CommentOutput])
 async def comments(post_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> list[CommentOutput]:
+    if await session.scalar(select(Post.id).join(Car).where(Post.id == post_id, Car.is_public.is_(True))) is None:
+        raise HTTPException(status_code=404, detail="Публикация не найдена")
     rows = (await session.execute(select(Comment, User.username).join(User, User.id == Comment.author_id).where(Comment.post_id == post_id).order_by(Comment.created_at))).all()
     return [CommentOutput(id=comment.id, author_username=username, content=comment.content, created_at=comment.created_at) for comment, username in rows]
 
 
 @app.post("/api/v1/posts/{post_id}/comments", response_model=CommentOutput, status_code=201)
 async def create_comment(post_id: uuid.UUID, data: CommentCreate, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> CommentOutput:
-    if await session.get(Post, post_id) is None:
+    if await session.scalar(select(Post).join(Car).where(Post.id == post_id, Car.is_public.is_(True)).with_for_update(of=Post)) is None:
         raise HTTPException(status_code=404, detail="Публикация не найдена")
     comment = Comment(post_id=post_id, author_id=user.id, content=data.content)
     session.add(comment)
@@ -559,7 +589,7 @@ async def delete_comment(comment_id: uuid.UUID, user: User = Depends(current_use
 
 @app.put("/api/v1/cars/{car_id}/favorite", status_code=204)
 async def favorite_car(car_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> None:
-    car = await session.get(Car, car_id)
+    car = await session.scalar(select(Car).where(Car.id == car_id).with_for_update())
     if car is None or not car.is_public:
         raise HTTPException(status_code=404, detail="Автомобиль не найден")
     exists = await session.scalar(select(Favorite).where(Favorite.car_id == car_id, Favorite.user_id == user.id))
@@ -571,9 +601,9 @@ async def favorite_car(car_id: uuid.UUID, user: User = Depends(current_user), se
 
 @app.delete("/api/v1/cars/{car_id}/favorite", status_code=204)
 async def unfavorite_car(car_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> None:
+    car = await session.scalar(select(Car).where(Car.id == car_id).with_for_update())
     favorite = await session.scalar(select(Favorite).where(Favorite.car_id == car_id, Favorite.user_id == user.id))
     if favorite:
-        car = await session.get(Car, car_id)
         await session.delete(favorite)
         if car:
             car.favorites_count = max(0, car.favorites_count - 1)
@@ -582,7 +612,7 @@ async def unfavorite_car(car_id: uuid.UUID, user: User = Depends(current_user), 
 
 @app.get("/api/v1/me/favorites", response_model=list[CarOutput])
 async def favorite_cars(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> list[CarOutput]:
-    rows = (await session.execute(select(Car, User.username).join(Favorite, Favorite.car_id == Car.id).join(User, User.id == Car.owner_id).where(Favorite.user_id == user.id).order_by(Favorite.created_at.desc()))).all()
+    rows = (await session.execute(select(Car, User.username).join(Favorite, Favorite.car_id == Car.id).join(User, User.id == Car.owner_id).where(Favorite.user_id == user.id, Car.is_public.is_(True)).order_by(Favorite.created_at.desc()))).all()
     return [car_output(car, username) for car, username in rows]
 
 
@@ -596,7 +626,7 @@ async def refresh_rating(car: Car, session: AsyncSession) -> RatingOutput:
 
 @app.put("/api/v1/cars/{car_id}/rating", response_model=RatingOutput)
 async def rate_car(car_id: uuid.UUID, data: RatingInput, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> RatingOutput:
-    car = await session.get(Car, car_id)
+    car = await session.scalar(select(Car).where(Car.id == car_id).with_for_update())
     if car is None or not car.is_public:
         raise HTTPException(status_code=404, detail="Автомобиль не найден")
     if car.owner_id == user.id:
@@ -612,8 +642,8 @@ async def rate_car(car_id: uuid.UUID, data: RatingInput, user: User = Depends(cu
 
 @app.delete("/api/v1/cars/{car_id}/rating", response_model=RatingOutput)
 async def delete_rating(car_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> RatingOutput:
-    car = await session.get(Car, car_id)
-    if car is None:
+    car = await session.scalar(select(Car).where(Car.id == car_id).with_for_update())
+    if car is None or (not car.is_public and car.owner_id != user.id):
         raise HTTPException(status_code=404, detail="Автомобиль не найден")
     rating = await session.scalar(select(CarRating).where(CarRating.car_id == car_id, CarRating.user_id == user.id))
     if rating:
@@ -672,13 +702,13 @@ async def delete_service_record(record_id: uuid.UUID, user: User = Depends(curre
 
 
 @app.get("/api/v1/cars/{car_id}/service-stats", response_model=ServiceStats)
-async def service_stats(car_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)) -> ServiceStats:
+async def service_stats(car_id: uuid.UUID, user: User = Depends(current_user), session: AsyncSession = Depends(get_session), currency: str = Query("KGS", pattern="^[A-Z]{3}$")) -> ServiceStats:
     await owned_car(car_id, user, session)
-    records = list((await session.scalars(select(ServiceRecord).where(ServiceRecord.car_id == car_id))).all())
+    records = list((await session.scalars(select(ServiceRecord).where(ServiceRecord.car_id == car_id, ServiceRecord.currency == currency))).all())
     by_category: dict[str, Any] = {}
     by_month: dict[str, Any] = {}
     for record in records:
         by_category[record.category] = by_category.get(record.category, 0) + record.cost
         month = record.service_date.strftime("%Y-%m")
         by_month[month] = by_month.get(month, 0) + record.cost
-    return ServiceStats(total=sum((record.cost for record in records), start=Decimal(0)), currency=records[0].currency if records else "KGS", by_category=by_category, by_month=by_month)
+    return ServiceStats(total=sum((record.cost for record in records), start=Decimal(0)), currency=currency, by_category=by_category, by_month=by_month)

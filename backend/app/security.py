@@ -51,3 +51,12 @@ async def current_user(
     if user is None or not user.is_active:
         raise unauthorized
     return user
+
+
+async def optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    session: AsyncSession = Depends(get_session),
+) -> User | None:
+    if credentials is None:
+        return None
+    return await current_user(credentials, session)

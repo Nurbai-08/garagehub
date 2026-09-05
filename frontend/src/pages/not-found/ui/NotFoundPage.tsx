@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export function NotFoundPage() {
   return (
-    <main className="inner-page placeholder">
+    <main id="main-content" className="inner-page placeholder">
       <p className="kicker">Гараж</p>
       <h1>404 — сюда не заезжают</h1>
       <p>

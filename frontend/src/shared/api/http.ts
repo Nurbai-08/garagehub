@@ -1,8 +1,9 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, CanceledError, type InternalAxiosRequestConfig } from "axios";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "/api/v1";
 let accessToken: string | null = null;
 let refreshRequest: Promise<{ access_token: string }> | null = null;
+let sessionVersion = 0;
 
 export const api = axios.create({
   baseURL,
@@ -16,18 +17,43 @@ export const refreshApi = axios.create({
 });
 
 export function setAccessToken(token: string | null) {
+  sessionVersion += 1;
   accessToken = token;
+  refreshRequest = null;
 }
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+export function refreshSession<T extends { access_token: string }>() {
+  if (!refreshRequest) {
+    const version = sessionVersion;
+    const pending = refreshApi.post<T>("/auth/refresh").then(({ data }) => {
+      if (version !== sessionVersion) throw new CanceledError("Session changed");
+      accessToken = data.access_token;
+      return data;
+    }).catch((error) => {
+      if (version === sessionVersion && axios.isAxiosError(error) && error.response?.status === 401) {
+        setAccessToken(null);
+        window.dispatchEvent(new Event("auth:expired"));
+      }
+      throw error;
+    }).finally(() => {
+      if (refreshRequest === pending) refreshRequest = null;
+    });
+    refreshRequest = pending;
+  }
+  return refreshRequest as Promise<T>;
+}
+
+type SessionRequest = InternalAxiosRequestConfig & { _retried?: boolean; _sessionVersion?: number };
+
+api.interceptors.request.use((config: SessionRequest) => {
+  config._sessionVersion = sessionVersion;
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  else config.headers.delete("Authorization");
   return config;
 });
 
 api.interceptors.response.use(undefined, async (error: AxiosError) => {
-  const request = error.config as
-    | (InternalAxiosRequestConfig & { _retried?: boolean })
-    | undefined;
+  const request = error.config as SessionRequest | undefined;
   const url = request?.url ?? "";
   const cannotRefresh = [
     "/auth/login",
@@ -39,20 +65,12 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
     error.response?.status !== 401 ||
     !request ||
     request._retried ||
+    request._sessionVersion !== sessionVersion ||
     cannotRefresh
   )
     throw error;
 
   request._retried = true;
-  refreshRequest ??= refreshApi
-    .post<{ access_token: string }>("/auth/refresh")
-    .then(({ data }) => {
-      setAccessToken(data.access_token);
-      return data;
-    })
-    .finally(() => {
-      refreshRequest = null;
-    });
-  await refreshRequest;
+  await refreshSession();
   return api(request);
 });

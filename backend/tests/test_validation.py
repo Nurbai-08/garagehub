@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from starlette.datastructures import Headers
 
 from app.image_urls import host_matches
-from app.schemas import CarCreate, RegisterInput
+from app.schemas import CarCreate, CarUpdate, RegisterInput
 from app.security import create_token, hash_password, verify_password
 from app.storage import LocalImageStorage, VercelBlobImageStorage
 
@@ -71,15 +71,27 @@ def test_car_validation_rejects_negative_mileage() -> None:
         )
 
 
-def test_car_validation_requires_three_gallery_images() -> None:
+@pytest.mark.parametrize("count", [1, 2, 5])
+def test_car_validation_accepts_one_to_five_gallery_images(count: int) -> None:
+    urls = [f"/uploads/{index}.jpg" for index in range(count)]
+    car = CarCreate(brand="BMW", model="M3", year=2022, cover_image_url=urls[0], image_urls=urls)
+    assert car.image_urls == urls
+    assert CarUpdate(image_urls=urls).image_urls == urls
+
+
+@pytest.mark.parametrize("count", [0, 6])
+def test_car_validation_rejects_empty_or_oversized_gallery(count: int) -> None:
+    urls = [f"/uploads/{index}.jpg" for index in range(count)]
     with pytest.raises(ValidationError):
         CarCreate(
             brand="BMW",
             model="M3",
             year=2022,
             cover_image_url="https://example.com/m3.jpg",
-            image_urls=["https://example.com/m3.jpg", "https://example.com/m3-side.jpg"],
+            image_urls=urls,
         )
+    with pytest.raises(ValidationError):
+        CarUpdate(image_urls=urls)
 
 
 @pytest.mark.anyio
@@ -92,9 +104,9 @@ async def test_image_storage_validates_content_signature(tmp_path) -> None:
 
 
 @pytest.mark.anyio
-async def test_image_storage_accepts_real_png_signature(tmp_path) -> None:
+async def test_image_storage_accepts_real_png_signature(tmp_path, png_bytes) -> None:
     storage = LocalImageStorage(str(tmp_path))
-    png = UploadFile(file=BytesIO(b"\x89PNG\r\n\x1a\n" + b"0" * 32), filename="cover.png", headers=Headers({"content-type": "image/png"}))
+    png = UploadFile(file=BytesIO(png_bytes), filename="cover.png", headers=Headers({"content-type": "image/png"}))
     stored = await storage.save(png)
     assert stored.location.endswith(".png")
     assert not stored.is_absolute_url
@@ -102,11 +114,11 @@ async def test_image_storage_accepts_real_png_signature(tmp_path) -> None:
 
 
 @pytest.mark.anyio
-async def test_blob_storage_returns_permanent_url(monkeypatch) -> None:
+async def test_blob_storage_returns_permanent_url(monkeypatch, png_bytes) -> None:
     client = FakeBlobClient()
     monkeypatch.setattr("app.storage.AsyncBlobClient", lambda **kwargs: client)
     storage = VercelBlobImageStorage("test-token")
-    png = UploadFile(file=BytesIO(b"\x89PNG\r\n\x1a\n" + b"0" * 32), filename="cover.png", headers=Headers({"content-type": "image/png"}))
+    png = UploadFile(file=BytesIO(png_bytes), filename="cover.png", headers=Headers({"content-type": "image/png"}))
 
     stored = await storage.save(png)
 

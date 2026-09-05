@@ -471,3 +471,7 @@ footer > p {
     gap: 24px;
   }
 }
+
+.pagination { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 32px 0; }
+.pagination button { padding: 12px 18px; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 8px; cursor: pointer; }
+.pagination button:disabled { opacity: .4; cursor: default; }

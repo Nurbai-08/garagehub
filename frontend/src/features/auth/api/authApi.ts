@@ -1,5 +1,5 @@
 import type { User } from "@/entities/user";
-import { api, refreshApi, setAccessToken } from "@/shared/api";
+import { api, refreshSession } from "@/shared/api";
 
 export type TokenResponse = {
   access_token: string;
@@ -15,12 +15,10 @@ export const authApi = {
     username: string;
     password: string;
   }) => (await api.post<TokenResponse>("/auth/register", input)).data,
-  refresh: async () =>
-    (await refreshApi.post<TokenResponse>("/auth/refresh")).data,
+  refresh: () => refreshSession<TokenResponse>(),
   me: async () => (await api.get<User>("/auth/me")).data,
   logout: async () => {
     await api.post("/auth/logout");
-    setAccessToken(null);
   },
 };
 

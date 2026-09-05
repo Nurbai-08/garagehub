@@ -24,7 +24,7 @@ export function CommunityChatPage() {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
-  const { data: messages = [], isLoading } = useQuery({
+  const { data: messages = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["community-messages"],
     queryFn: getCommunityMessages,
     refetchInterval: 4_000,
@@ -38,9 +38,10 @@ export function CommunityChatPage() {
     onError: (value) => setError(apiMessage(value)),
   });
 
+  const lastMessageId = messages.at(-1)?.id;
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [lastMessageId]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -51,7 +52,7 @@ export function CommunityChatPage() {
   };
 
   return (
-    <main className="community-chat-page">
+    <main id="main-content" className="community-chat-page">
       <section className="community-chat-shell">
         <header className="community-chat-head">
           <Link to="/messages" className="back">
@@ -74,6 +75,8 @@ export function CommunityChatPage() {
         <div className="community-message-stream">
           {isLoading ? (
             <div className="conversation-loading">Загружаем сообщения…</div>
+          ) : isError ? (
+            <div className="error">Не удалось загрузить чат. <button onClick={() => void refetch()}>Повторить</button></div>
           ) : messages.length ? (
             messages.map((message) => (
               <article
@@ -103,6 +106,8 @@ export function CommunityChatPage() {
         </div>
         <form className="community-composer" onSubmit={submit}>
           <textarea
+            disabled={send.isPending}
+            aria-label="Сообщение в общий чат"
             value={content}
             onChange={(event) => setContent(event.target.value)}
             maxLength={2000}

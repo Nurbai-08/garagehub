@@ -43,7 +43,9 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues | RegisterValues>({ resolver: zodResolver(schema) });
 
-  if (auth.user) return <Navigate to="/garage" replace />;
+  const requested = (location.state as { from?: string } | null)?.from;
+  const from = requested?.startsWith("/") && !requested.startsWith("//") ? requested : "/garage";
+  if (auth.user) return <Navigate to={from} replace />;
   const submit = async (values: LoginValues | RegisterValues) => {
     setServerError("");
     try {
@@ -57,8 +59,6 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
           password: registration.password,
         });
       }
-      const from =
-        (location.state as { from?: string } | null)?.from ?? "/garage";
       navigate(from, { replace: true });
     } catch (error) {
       setServerError(apiMessage(error));
@@ -66,7 +66,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
   };
 
   return (
-    <main className="auth-page">
+    <main id="main-content" className="auth-page">
       <section className="auth-visual">
         <div>
           <p className="kicker">Гараж для своих</p>
@@ -176,7 +176,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
           </form>
           <p className="auth-switch">
             {mode === "login" ? "Ещё нет аккаунта?" : "Уже есть аккаунт?"}{" "}
-            <Link to={mode === "login" ? "/register" : "/login"}>
+            <Link to={mode === "login" ? "/register" : "/login"} state={{ from }}>
               {mode === "login" ? "Зарегистрироваться" : "Войти"}
             </Link>
           </p>
