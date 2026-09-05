@@ -1,0 +1,473 @@
+:root {
+  --ink: #0b0b0a;
+  --carbon: #151513;
+  --cream: #eee8dc;
+  --copper: #b65d3c;
+}
+
+::selection {
+  color: var(--cream);
+  background: var(--copper);
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+.header {
+  height: 76px;
+  padding-inline: 5vw;
+  border-bottom-color: rgb(255 255 255 / 12%);
+}
+
+.header.solid {
+  background: rgb(11 11 10 / 94%);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  gap: 10px;
+  font-family: "Onest", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .015em;
+}
+
+.brand-mark {
+  width: 29px;
+  height: 29px;
+  flex: none;
+  color: var(--copper);
+  transition: color .2s ease, transform .25s ease;
+}
+
+.brand:hover .brand-mark {
+  color: #d17a58;
+  transform: rotate(-3deg);
+}
+
+.nav {
+  gap: 30px;
+}
+
+.nav a,
+.login {
+  position: relative;
+  font-size: 12px;
+  color: #d1cec7;
+}
+
+.nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -10px;
+  left: 0;
+  height: 1px;
+  content: '';
+  background: var(--copper);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .25s ease;
+}
+
+.nav a:hover::after,
+.nav a.active::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.add,
+.primary {
+  min-height: 44px;
+  padding-inline: 19px;
+  font-size: 12px;
+  letter-spacing: .015em;
+}
+
+.add svg,
+.primary svg,
+.view-all svg {
+  transition: transform .25s ease;
+}
+
+.add:hover svg,
+.primary:hover svg,
+.view-all:hover svg {
+  transform: translateX(3px);
+}
+
+.hero {
+  min-height: max(720px, 100svh);
+  padding: 132px 6vw 112px;
+  background-position: 58% center;
+}
+
+.hero-shade {
+  background:
+    linear-gradient(90deg, rgb(5 5 5 / 94%) 0%, rgb(5 5 5 / 65%) 43%, rgb(5 5 5 / 8%) 76%),
+    linear-gradient(0deg, rgb(5 5 5 / 88%), transparent 48%);
+}
+
+.hero-content {
+  max-width: 1180px;
+}
+
+.eyebrow,
+.kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .19em;
+}
+
+.hero h1 {
+  max-width: 1120px;
+  margin: 30px 0 31px;
+  font-size: clamp(3.6rem, 6.7vw, 7.2rem);
+  font-weight: 600;
+  line-height: .94;
+  letter-spacing: -.045em;
+}
+
+.hero h1 em {
+  color: #d4b3a2;
+  font-weight: 400;
+  letter-spacing: -.025em;
+}
+
+.hero p {
+  max-width: 610px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #c0bdb6;
+}
+
+.hero-meta {
+  right: 5vw;
+  bottom: 42px;
+  gap: 34px;
+  align-items: flex-start;
+}
+
+.hero-meta span {
+  min-width: 92px;
+  font-size: 9px;
+  line-height: 1.4;
+  color: #9d9a94;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.hero-meta b {
+  display: block;
+  margin-bottom: 7px;
+  font: 500 11px "Unbounded", sans-serif;
+  color: var(--cream);
+}
+
+.scroll {
+  bottom: 42px;
+}
+
+.section {
+  padding: 112px 6vw 124px;
+}
+
+.section-head {
+  margin-bottom: 56px;
+}
+
+.section h2 {
+  max-width: 940px;
+  font-size: clamp(2.6rem, 4.5vw, 5rem);
+  line-height: 1.02;
+  letter-spacing: -.04em;
+}
+
+.section h2 i {
+  font-weight: 400;
+  color: var(--copper);
+}
+
+.view-all {
+  gap: 20px;
+  font-size: 10px;
+  letter-spacing: .13em;
+}
+
+.card-grid {
+  gap: 18px;
+}
+
+.car-photo {
+  background: #1a1a18;
+}
+
+.year {
+  top: 12px;
+  left: 12px;
+  padding: 6px 8px;
+  font-size: 9px;
+  letter-spacing: .08em;
+  background: rgb(10 10 10 / 82%);
+  backdrop-filter: blur(6px);
+}
+
+.car-info {
+  margin-top: 17px;
+}
+
+.car-info h3,
+.feature-list h3,
+.garage-car-body h2,
+.favorites-grid h2,
+.profile-car-grid h3,
+.timeline article h3 {
+  font-family: "Onest", sans-serif;
+  font-weight: 600;
+  letter-spacing: -.025em;
+}
+
+.car-info h3 {
+  font-size: 21px;
+}
+
+.car-spec {
+  justify-content: space-between;
+  font-size: 9px;
+}
+
+.stories {
+  gap: 12px;
+  height: min(720px, 68vw);
+}
+
+.story-overlay {
+  bottom: 27px;
+}
+
+.story-overlay h3 {
+  max-width: 760px;
+  font-family: "Onest", sans-serif;
+  font-size: clamp(1.25rem, 2vw, 2.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+
+.manifesto {
+  position: relative;
+  min-height: 620px;
+  place-items: center start;
+  padding: 130px 8vw;
+  text-align: left;
+  background: #151513;
+}
+
+.manifesto::before {
+  position: absolute;
+  top: 80px;
+  left: 8vw;
+  font-size: 9px;
+  color: #6e6b66;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  content: 'GARAGE NOTES / 001';
+}
+
+.manifesto p {
+  max-width: 1120px;
+  font-size: clamp(2.5rem, 4.8vw, 5.4rem);
+  line-height: 1.12;
+  letter-spacing: -.04em;
+}
+
+.features {
+  grid-template-columns: minmax(280px, .8fr) 1.2fr;
+  gap: 11vw;
+}
+
+.feature-intro h2 {
+  max-width: 520px;
+  font-size: clamp(2.6rem, 4vw, 4.5rem);
+  line-height: 1.04;
+}
+
+.feature-list > div {
+  padding: 30px 0 34px 68px;
+}
+
+.feature-list > div > span {
+  top: 34px;
+  font-family: "Unbounded", sans-serif;
+}
+
+.feature-list h3 {
+  margin: 0 0 9px;
+  font-size: 22px;
+}
+
+.feature-list p {
+  margin-bottom: 0;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.cta {
+  min-height: 620px;
+  place-items: center start;
+  padding: 110px 8vw;
+  color: var(--ink);
+  text-align: left;
+  background:
+    radial-gradient(circle at 85% 20%, rgb(255 255 255 / 18%), transparent 28%),
+    var(--copper);
+}
+
+.cta > div {
+  max-width: 980px;
+}
+
+.cta .kicker,
+.cta > div > p:not(.kicker) {
+  color: rgb(11 11 10 / 72%);
+}
+
+.cta h2 {
+  margin: 20px 0 24px;
+  font-size: clamp(3rem, 5.8vw, 6.5rem);
+  line-height: .98;
+  letter-spacing: -.05em;
+}
+
+.cta .primary {
+  color: var(--cream);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+footer {
+  padding-top: 60px;
+}
+
+footer > p {
+  color: #96928a;
+}
+
+@media (max-width: 900px) {
+  .hero-meta {
+    display: none;
+  }
+
+  .section {
+    padding-block: 88px;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+    gap: 55px;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    height: 70px;
+    padding-inline: 5vw;
+  }
+
+  .brand {
+    font-size: 13px;
+  }
+
+  .hero {
+    min-height: 720px;
+    padding: 115px 5vw 92px;
+    background-position: 64% center;
+  }
+
+  .hero h1 {
+    margin-block: 25px;
+    font-size: clamp(2.55rem, 12.5vw, 3.35rem);
+    line-height: 1;
+  }
+
+  .hero p {
+    font-size: 14px;
+  }
+
+  .hero p br {
+    display: none;
+  }
+
+  .hero-buttons {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .hero-buttons .text-link {
+    align-self: flex-start;
+  }
+
+  .scroll {
+    display: none;
+  }
+
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .section-head > div {
+    grid-template-columns: 32px 1fr;
+  }
+
+  .section h2 {
+    font-size: 2.55rem;
+  }
+
+  .stories {
+    height: auto;
+  }
+
+  .story,
+  .story.large {
+    min-height: 360px;
+  }
+
+  .manifesto {
+    min-height: 520px;
+    padding: 115px 6vw 75px;
+  }
+
+  .manifesto::before {
+    top: 65px;
+    left: 6vw;
+  }
+
+  .manifesto p {
+    font-size: 2.45rem;
+  }
+
+  .feature-intro h2 {
+    font-size: 2.65rem;
+  }
+
+  .feature-list > div {
+    padding-left: 48px;
+  }
+
+  .cta {
+    min-height: 560px;
+    padding: 85px 6vw;
+  }
+
+  .cta h2 {
+    font-size: 3.1rem;
+  }
+
+  footer {
+    gap: 24px;
+  }
+}

@@ -1,0 +1,619 @@
+:root {
+  --ink: #111510;
+  --carbon: #1b211a;
+  --elevated: #272c23;
+  --cream: #eee5d2;
+  --paper: #e5dac3;
+  --muted: #8e8a7d;
+  --metal: #3d4339;
+  --copper: #a74d35;
+  --brass: #b89b67;
+  --forest: #1f3027;
+  --wine: #6e302a;
+}
+
+body {
+  color: var(--cream);
+  background: var(--ink);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  content: '';
+  opacity: .055;
+  background-image:
+    repeating-radial-gradient(circle at 20% 30%, transparent 0 2px, rgb(255 255 255 / 18%) 3px 4px),
+    repeating-linear-gradient(93deg, transparent 0 5px, rgb(0 0 0 / 18%) 6px 7px);
+  background-size: 7px 7px, 11px 11px;
+  mix-blend-mode: soft-light;
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+main {
+  animation: heritage-page-in .55s ease-out both;
+}
+
+.header {
+  height: 88px;
+  padding-inline: 4.2vw;
+  border-top: 3px solid var(--brass);
+  border-bottom: 1px solid rgb(210 191 151 / 35%);
+  background: linear-gradient(180deg, rgb(13 18 14 / 92%), rgb(13 18 14 / 62%), transparent);
+}
+
+.header.solid {
+  background: rgb(17 24 19 / 97%);
+  box-shadow: 0 12px 35px rgb(0 0 0 / 16%);
+  backdrop-filter: blur(12px);
+}
+
+.brand {
+  position: relative;
+  gap: 12px;
+  font-family: "Prata", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: .035em;
+}
+
+.brand::after {
+  position: absolute;
+  top: calc(50% + 12px);
+  left: 44px;
+  color: var(--brass);
+  font: 500 6px "Unbounded", sans-serif;
+  letter-spacing: .24em;
+  content: 'MOTOR ARCHIVE';
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  color: var(--brass);
+}
+
+.nav {
+  gap: 32px;
+}
+
+.nav a,
+.login {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.nav a::after {
+  bottom: -14px;
+  background: var(--brass);
+}
+
+.add,
+.primary {
+  min-height: 46px;
+  border-color: var(--brass);
+  color: #171710;
+  background: var(--brass);
+  box-shadow: inset 0 0 0 3px rgb(23 23 16 / 12%);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.add:hover,
+.primary:hover {
+  border-color: #d0b47e;
+  color: #151710;
+  background: #d0b47e;
+}
+
+.hero {
+  min-height: max(780px, 100svh);
+  isolation: isolate;
+  padding: 150px 7vw 128px;
+  background:
+    radial-gradient(circle at 78% 25%, rgb(184 155 103 / 18%), transparent 0 13%, transparent 14%),
+    linear-gradient(112deg, #0d160f 0 58%, #21372a 58% 77%, #18271e 77% 100%);
+}
+
+.hero::before {
+  position: absolute;
+  inset: 108px 3.2vw 38px;
+  z-index: 1;
+  border: 1px solid rgb(205 180 130 / 42%);
+  pointer-events: none;
+  content: '';
+}
+
+.hero::after {
+  position: absolute;
+  right: 4vw;
+  bottom: 20px;
+  z-index: 0;
+  pointer-events: none;
+  color: rgb(213 180 119 / 8%);
+  font: 400 clamp(20rem, 39vw, 39rem)/.72 "Prata", Georgia, serif;
+  content: '01';
+  animation: heritage-number-drift 12s ease-in-out infinite alternate;
+}
+
+.hero-shade {
+  z-index: 0;
+  background:
+    linear-gradient(90deg, transparent 0 57.8%, rgb(213 180 119 / 16%) 58%, transparent 58.15%),
+    repeating-linear-gradient(0deg, transparent 0 79px, rgb(213 180 119 / 5%) 80px),
+    radial-gradient(circle at 20% 45%, rgb(0 0 0 / 12%), transparent 48%);
+}
+
+.hero-content {
+  z-index: 2;
+  max-width: 1050px;
+}
+
+.eyebrow,
+.kicker {
+  color: var(--copper);
+  font-family: "Unbounded", sans-serif;
+  font-size: 9px;
+  letter-spacing: .17em;
+}
+
+.eyebrow span {
+  background: var(--brass);
+  transform-origin: left;
+  animation: heritage-line-in .9s .25s ease-out both;
+}
+
+.hero h1 {
+  max-width: 980px;
+  margin: 35px 0 32px;
+  font-family: "Prata", Georgia, serif;
+  font-size: clamp(4rem, 7.4vw, 8.4rem);
+  font-weight: 400;
+  line-height: .94;
+  letter-spacing: -.045em;
+  text-shadow: 0 4px 30px rgb(0 0 0 / 28%);
+}
+
+.hero h1 em {
+  color: #d5b477;
+  font-style: italic;
+  letter-spacing: -.03em;
+}
+
+.hero p {
+  color: #ccc5b6;
+  font-family: Georgia, serif;
+  font-size: 16px;
+}
+
+.hero-seal {
+  position: absolute;
+  top: 155px;
+  right: 7vw;
+  z-index: 2;
+  display: grid;
+  width: 132px;
+  height: 132px;
+  border: 1px solid rgb(205 180 130 / 68%);
+  border-radius: 50%;
+  place-content: center;
+  color: var(--brass);
+  text-align: center;
+  animation: heritage-seal-in .9s .35s ease-out both;
+}
+
+.hero-seal::before {
+  position: absolute;
+  inset: 7px;
+  border: 1px dashed rgb(205 180 130 / 45%);
+  border-radius: inherit;
+  content: '';
+}
+
+.hero-seal span,
+.hero-seal small {
+  font: 500 7px "Unbounded", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+}
+
+.hero-seal b {
+  margin: 5px 0;
+  font: 400 27px "Prata", serif;
+}
+
+.hero-meta {
+  z-index: 2;
+  padding-top: 16px;
+  border-top: 1px solid rgb(205 180 130 / 38%);
+}
+
+.hero-meta b {
+  color: var(--brass);
+}
+
+.scroll {
+  z-index: 2;
+  color: #bbb3a3;
+}
+
+.scroll svg {
+  animation: heritage-bob 1.8s ease-in-out infinite;
+}
+
+.section {
+  position: relative;
+}
+
+.cream,
+.features,
+.inner-page,
+.auth-page,
+.car-form-page,
+.post-detail,
+.service-page,
+.profile-page,
+.settings-page {
+  color: #1d211a;
+  background-color: var(--cream);
+  background-image: linear-gradient(90deg, rgb(83 72 51 / 5%) 1px, transparent 1px);
+  background-size: 80px 100%;
+}
+
+.section-head {
+  padding-bottom: 30px;
+  border-bottom: 1px solid rgb(63 59 48 / 34%);
+}
+
+.section h2,
+.feature-intro h2,
+.inner-page > h1,
+.garage-title h1,
+.feed-head h1,
+.auth-box h1,
+.form-aside h1,
+.service-hero h1,
+.profile-copy h1,
+.settings-layout h1 {
+  font-family: "Prata", Georgia, serif;
+  font-weight: 400;
+}
+
+.section h2 i {
+  color: var(--copper);
+  font-style: italic;
+}
+
+.number {
+  color: var(--copper);
+  font-family: "Prata", serif;
+  font-size: 14px;
+}
+
+.car-card {
+  padding-bottom: 8px;
+  transition: transform .45s cubic-bezier(.2, .8, .2, 1);
+}
+
+.car-card:hover {
+  transform: translateY(-9px);
+}
+
+.car-photo {
+  border: 1px solid rgb(68 61 46 / 40%);
+  box-shadow: 8px 8px 0 rgb(78 63 37 / 12%);
+}
+
+.car-photo img {
+  filter: saturate(.78) contrast(1.04) sepia(.08);
+  transition: transform .8s cubic-bezier(.2, .8, .2, 1), filter .5s ease;
+}
+
+.car-card:hover img {
+  filter: saturate(1) contrast(1.02) sepia(0);
+  transform: scale(1.045);
+}
+
+.car-info h3 {
+  font-family: "Prata", Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.year {
+  border: 1px solid rgb(213 191 151 / 42%);
+  background: rgb(20 27 21 / 88%);
+}
+
+.dark,
+.journey {
+  background-color: var(--forest);
+  background-image: linear-gradient(90deg, rgb(218 199 160 / 5%) 1px, transparent 1px);
+  background-size: 80px 100%;
+}
+
+.story,
+.story-placeholder {
+  border: 1px solid rgb(197 173 125 / 30%);
+}
+
+.story img {
+  filter: sepia(.18) saturate(.66) contrast(1.05);
+}
+
+.story:hover img {
+  filter: sepia(0) saturate(.95);
+}
+
+.story-placeholder {
+  background:
+    radial-gradient(circle at 78% 30%, rgb(174 135 80 / 10%), transparent 24%),
+    linear-gradient(115deg, #26342a, #172019);
+}
+
+.story-placeholder h3 {
+  font-family: "Prata", Georgia, serif;
+  font-weight: 400;
+}
+
+.manifesto {
+  color: var(--cream);
+  background: var(--wine);
+}
+
+.manifesto::after {
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgb(226 207 169 / 24%);
+  pointer-events: none;
+  content: '';
+}
+
+.manifesto p {
+  font-family: "Prata", Georgia, serif;
+  font-weight: 400;
+}
+
+.manifesto i {
+  color: #d5b477;
+}
+
+.feature-list > div,
+.journey-steps,
+.privacy-note {
+  border-color: rgb(106 90 59 / 38%);
+}
+
+.feature-list > div {
+  transition: padding-left .35s ease, background-color .35s ease;
+}
+
+.feature-list > div:hover {
+  padding-left: 78px;
+  background: rgb(151 116 69 / 7%);
+}
+
+.journey-steps article {
+  border-color: rgb(205 180 130 / 20%);
+  transition: color .35s ease, background-color .35s ease;
+}
+
+.journey-steps article:hover {
+  color: #fff9e9;
+  background: rgb(184 155 103 / 9%);
+}
+
+.cta {
+  position: relative;
+  min-height: 690px;
+  place-items: center;
+  color: var(--cream);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 120%, rgb(184 155 103 / 25%), transparent 43%),
+    repeating-linear-gradient(90deg, transparent 0 79px, rgb(213 180 119 / 5%) 80px),
+    #17271d;
+}
+
+.cta::after {
+  position: absolute;
+  inset: 42px;
+  border: 1px solid rgb(205 180 130 / 38%);
+  pointer-events: none;
+  content: '';
+}
+
+.cta .kicker,
+.cta > div > p:not(.kicker) {
+  color: #c8c0b0;
+}
+
+.cta h2 {
+  font-family: "Prata", Georgia, serif;
+  font-weight: 400;
+}
+
+.cta .primary {
+  color: #171710;
+  background: var(--brass);
+  border-color: var(--brass);
+}
+
+footer {
+  border-top: 3px solid var(--brass);
+  background: #101710;
+}
+
+footer .brand,
+footer nav a {
+  color: var(--cream);
+}
+
+footer small,
+footer nav p {
+  color: var(--brass);
+}
+
+.field input,
+.field select,
+.field textarea,
+.searchbar,
+.catalog-filters select,
+.catalog-filters input {
+  border-color: rgb(83 72 51 / 48%);
+  background: rgb(255 251 239 / 28%);
+}
+
+.feed-page,
+.messages-page {
+  background: var(--forest);
+}
+
+.feed-post,
+.garage-car,
+.favorites-grid article,
+.record-modal > div {
+  border: 1px solid rgb(77 65 43 / 42%);
+  background: var(--cream);
+  box-shadow: 10px 12px 0 rgb(24 34 26 / 12%);
+}
+
+@supports (animation-timeline: view()) {
+  .section-head,
+  .card-grid,
+  .stories,
+  .manifesto p,
+  .feature-list > div,
+  .journey-steps article,
+  .privacy-note,
+  .cta > div {
+    animation: heritage-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 4% cover 32%;
+  }
+
+  .feature-list > div:nth-child(2),
+  .journey-steps article:nth-child(2) {
+    animation-range: entry 10% cover 38%;
+  }
+
+  .feature-list > div:nth-child(3),
+  .journey-steps article:nth-child(3) {
+    animation-range: entry 16% cover 44%;
+  }
+}
+
+@keyframes heritage-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes heritage-line-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes heritage-number-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-18px, -8px, 0); }
+}
+
+@keyframes heritage-seal-in {
+  from { opacity: 0; transform: rotate(-14deg) scale(.8); }
+  to { opacity: 1; transform: rotate(7deg) scale(1); }
+}
+
+@keyframes heritage-bob {
+  50% { transform: translateY(5px); }
+}
+
+@keyframes heritage-reveal {
+  from { opacity: 0; transform: translateY(42px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: 72px;
+  }
+
+  .nav {
+    top: 72px;
+    border-bottom: 1px solid rgb(205 180 130 / 35%);
+    background: #152019;
+  }
+
+  .hero {
+    background:
+      radial-gradient(circle at 90% 24%, rgb(184 155 103 / 17%), transparent 0 14%, transparent 15%),
+      linear-gradient(112deg, #0d160f 0 62%, #21372a 62% 100%);
+  }
+
+  .hero-seal {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .brand {
+    font-size: 15px;
+  }
+
+  .brand::after {
+    display: none;
+  }
+
+  .hero {
+    min-height: 760px;
+    padding-inline: 7vw;
+  }
+
+  .hero::before {
+    inset: 90px 4vw 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.2rem, 15vw, 4.4rem);
+  }
+
+  .hero::after {
+    right: -32px;
+    bottom: 75px;
+    font-size: 19rem;
+  }
+
+  .hero p {
+    font-size: 14px;
+  }
+
+  .car-photo {
+    box-shadow: 5px 5px 0 rgb(78 63 37 / 12%);
+  }
+
+  .manifesto::after,
+  .cta::after {
+    inset: 18px;
+  }
+
+  .feature-list > div:hover {
+    padding-left: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .hero::after,
+  .hero-seal,
+  .scroll svg,
+  main {
+    animation: none;
+  }
+}
