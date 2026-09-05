@@ -1,0 +1,46 @@
+[project]
+name = "garagehub-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "uvicorn[standard]>=0.35,<1",
+  "sqlalchemy[asyncio]>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.10,<3",
+  "pyjwt>=2.10,<3",
+  "pwdlib[argon2]>=0.2,<1",
+  "email-validator>=2.2,<3",
+  "python-multipart>=0.0.20,<1",
+  "alembic>=1.16,<2",
+  "vercel>=0.10,<0.11",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.4,<9", "httpx>=0.28,<1", "ruff>=0.12,<1", "mypy>=1.17,<2"]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["alembic*", "tests*"]
+
+[tool.ruff]
+line-length = 400
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.vercel]
+entrypoint = "app.main:app"
+
+[tool.vercel.scripts]
+build = "alembic upgrade head"
