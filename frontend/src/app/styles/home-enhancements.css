@@ -51,6 +51,16 @@
   background: var(--ink);
 }
 
+.home-car-skeleton {
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.home-cars-loading-note {
+  display: none;
+}
+
 .stories-empty {
   height: auto;
   grid-template-rows: auto;
@@ -276,6 +286,57 @@ footer small {
     padding: 28px;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .home-car-skeletons {
+    display: block;
+  }
+
+  .home-car-skeletons .home-car-skeleton {
+    display: none;
+  }
+
+  .home-cars-loading-note {
+    display: grid;
+    min-height: 116px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 15px;
+    align-items: center;
+    background: var(--paper);
+  }
+
+  .home-cars-loading-note > span {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    color: var(--blue);
+    background: var(--blue-soft);
+    place-items: center;
+    animation: pulse 1.5s ease-in-out infinite alternate;
+  }
+
+  .home-cars-loading-note svg {
+    width: 22px;
+  }
+
+  .home-cars-loading-note b,
+  .home-cars-loading-note small {
+    display: block;
+  }
+
+  .home-cars-loading-note b {
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+
+  .home-cars-loading-note small {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
   }
 
   .story-placeholder {

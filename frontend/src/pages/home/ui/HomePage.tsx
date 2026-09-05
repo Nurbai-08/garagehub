@@ -84,9 +84,26 @@ function FeaturedCars() {
         </Link>
       </div>
       {isLoading ? (
-        <div className="card-grid">
+        <div
+          className="card-grid home-car-skeletons"
+          role="status"
+          aria-label="Загружаем подборку машин"
+        >
+          <div className="home-cars-loading-note">
+            <span aria-hidden="true">
+              <Images />
+            </span>
+            <div>
+              <b>Смотрим, что добавили друзья</b>
+              <small>Обычно это занимает пару секунд.</small>
+            </div>
+          </div>
           {[1, 2, 3].map((n) => (
-            <div className="skeleton" key={n} />
+            <div
+              className="skeleton home-car-skeleton"
+              aria-hidden="true"
+              key={n}
+            />
           ))}
         </div>
       ) : isError ? (
