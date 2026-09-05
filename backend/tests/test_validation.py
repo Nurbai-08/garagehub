@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile
 from pydantic import ValidationError
 from starlette.datastructures import Headers
 
+from app.image_urls import host_matches
 from app.schemas import CarCreate, RegisterInput
 from app.security import create_token, hash_password, verify_password
 from app.storage import LocalImageStorage, VercelBlobImageStorage
@@ -41,6 +42,12 @@ def test_password_is_hashed_and_verifiable() -> None:
 def test_tokens_created_in_the_same_second_are_unique() -> None:
     user_id = uuid.uuid4()
     assert create_token(user_id, "refresh", timedelta(days=30)) != create_token(user_id, "refresh", timedelta(days=30))
+
+
+def test_image_host_wildcard_only_matches_subdomains() -> None:
+    pattern = "*.public.blob.vercel-storage.com"
+    assert host_matches("garage.public.blob.vercel-storage.com", pattern)
+    assert not host_matches("public.blob.vercel-storage.com.evil.example", pattern)
 
 
 def test_username_validation_rejects_spaces_and_cyrillic() -> None:
